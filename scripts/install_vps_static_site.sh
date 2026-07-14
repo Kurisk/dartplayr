@@ -84,6 +84,7 @@ systemctl restart dartplayr
 
 nginx -t
 systemctl reload nginx
+certbot --nginx -d "${DOMAIN}" --non-interactive --agree-tos --redirect --register-unsafely-without-email
 
 echo "DartPlayr Django app is installed for http://${DOMAIN}"
 echo "Admin URL: https://${DOMAIN}/admin/"

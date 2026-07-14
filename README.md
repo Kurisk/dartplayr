@@ -68,5 +68,5 @@ Reset the admin password on the VPS with:
 
 ```bash
 sudo sed -i 's/^DARTPLAYR_ADMIN_PASSWORD=.*/DARTPLAYR_ADMIN_PASSWORD=new-password-here/' /etc/dartplayr.env
-sudo -E /var/www/dartplayr/venv/bin/python /var/www/dartplayr/manage.py ensure_admin
+sudo bash -c 'set -a; . /etc/dartplayr.env; set +a; /var/www/dartplayr/venv/bin/python /var/www/dartplayr/manage.py ensure_admin'
 ```
