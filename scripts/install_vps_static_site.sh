@@ -31,6 +31,7 @@ else
 fi
 
 chown -R www-data:www-data "${SITE_DIR}"
+git config --global --add safe.directory "${SITE_DIR}"
 
 cp "${SITE_DIR}/deploy/${DOMAIN}.nginx.conf" "${NGINX_AVAILABLE}"
 ln -sfn "${NGINX_AVAILABLE}" "${NGINX_ENABLED}"
