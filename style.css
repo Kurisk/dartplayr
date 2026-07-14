@@ -2449,6 +2449,8 @@ body {
     height: auto;
     min-height: calc(100vh - 16px);
     overflow: visible;
+    padding-top: 124px;
+    -webkit-overflow-scrolling: touch;
   }
 
   #game-screen.active {
@@ -2457,12 +2459,16 @@ body {
   }
 
   .game-header {
-    position: sticky;
-    top: 0;
-    z-index: 60;
-    padding: 10px 0;
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    z-index: 1000;
+    padding: 10px;
     margin-bottom: 10px;
     background: rgba(9, 10, 12, 0.96);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
   }
@@ -2516,9 +2522,7 @@ body {
   }
 
   .turn-status {
-    position: sticky;
-    top: 76px;
-    z-index: 45;
+    position: static;
   }
 
   .keypad-grid {
