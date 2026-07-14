@@ -18,12 +18,15 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 apt-get update
-apt-get install -y git nginx
+apt-get install -y git nginx certbot python3-certbot-nginx
 
 if [ -d "${SITE_DIR}/.git" ]; then
   git -C "${SITE_DIR}" pull --ff-only
 else
-  rm -rf "${SITE_DIR}"
+  if [ -e "${SITE_DIR}" ] && [ "$(find "${SITE_DIR}" -mindepth 1 -maxdepth 1 | wc -l)" -gt 0 ]; then
+    echo "${SITE_DIR} exists and is not an existing Git checkout. Move it aside before installing."
+    exit 1
+  fi
   git clone "${REPO_URL}" "${SITE_DIR}"
 fi
 
