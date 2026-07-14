@@ -1095,6 +1095,48 @@ function isBogeyNumber(score) {
   return [169, 168, 166, 165, 163, 162, 159].includes(score);
 }
 
+function getCricketFocus(player) {
+  if (!player) return "Pick a target";
+  for (var i = 0; i < CRICKET_TARGETS.length; i++) {
+    var target = CRICKET_TARGETS[i];
+    if ((player.cricketMarks[target] || 0) < 3) {
+      return "Target: " + (target === 25 ? "Bull" : target);
+    }
+  }
+  return "All closed. Stay ahead on points.";
+}
+
+function updateMobileShotStrip(activePlayer, turnTotal) {
+  var nameEl = document.getElementById("mobile-active-player");
+  var primaryEl = document.getElementById("mobile-primary-value");
+  var helperEl = document.getElementById("mobile-helper-value");
+  var turnEl = document.getElementById("mobile-turn-value");
+  if (!nameEl || !primaryEl || !helperEl || !turnEl || !activePlayer) return;
+
+  nameEl.textContent = activePlayer.name + "'s turn";
+
+  if (state.gameMode === '01') {
+    var remDarts = 3 - state.turnDarts.length;
+    var helperText = "";
+    if (state.gameOptions.outRule === 'double-in-out' && !activePlayer.isIn) {
+      helperText = "Hit DOUBLE to start";
+    } else {
+      var route = solveCheckout(activePlayer.score, remDarts, state.gameOptions.outRule);
+      helperText = route ? ("Out: " + route.join(" - ")) : getSetupSuggestion(activePlayer.score, remDarts);
+    }
+    primaryEl.textContent = "Score: " + activePlayer.score;
+    helperEl.textContent = helperText;
+    turnEl.textContent = "Turn: " + turnTotal + " | Darts left: " + remDarts;
+  } else {
+    var dartsText = state.turnDarts.length > 0
+      ? state.turnDarts.map(function(d) { return d.label; }).join(", ")
+      : "No darts yet";
+    primaryEl.textContent = activePlayer.score + " pts";
+    helperEl.textContent = getCricketFocus(activePlayer);
+    turnEl.textContent = "Darts: " + dartsText;
+  }
+}
+
 // UI RENDERING CONTROLLER
 function updateUI() {
   var activePlayer = state.players[state.activePlayerIndex];
@@ -1123,6 +1165,7 @@ function updateUI() {
   
   var turnSumDisplayEl = document.getElementById("turn-sum-display");
   if (turnSumDisplayEl) turnSumDisplayEl.textContent = "Turn: " + turnTotal;
+  updateMobileShotStrip(activePlayer, turnTotal);
   
   // Cricket Turn Info Update
   var cricketActivePlayerNameEl = document.getElementById("cricket-active-player-name");
@@ -1618,7 +1661,7 @@ function renderProfileDetails() {
     year: 'numeric', month: 'long', day: 'numeric'
   });
   
-  var html = '\n    <div class="profile-detail-view">\n      <!-- Profile Header -->\n      <header class="profile-detail-header">\n        <div class="detail-avatar" style="background-color: ' + (profile.color) + '">\n          ' + (profile.name.substring(0, 2).toUpperCase()) + '\n        </div>\n        <div class="detail-name-meta">\n          <h2>' + (profile.name) + '</h2>\n          <span class="joined-date">Member since ' + (joinedDateStr) + '</span>\n        </div>\n      </header>\n      \n      <!-- Win / Loss Widget -->\n      <div class="win-rate-widget">\n        <div class="win-rate-header-label">\n          <span>Win / Loss Ratio</span>\n          <span style="color: var(--success-color)">' + (wr) + '% Win Rate</span>\n        </div>\n        <div class="win-rate-bar-outer">\n          <div class="win-rate-bar-inner" style="width: ' + (wr) + '%"></div>\n        </div>\n        <div class="win-rate-legend">\n          <span>Wins: ' + (stats.wins) + '</span>\n          <span>Losses: ' + (stats.losses) + '</span>\n          <span>Total Games: ' + (stats.gamesPlayed) + '</span>\n        </div>\n      </div>\n      \n      <!-- Lifetime Summary Cards -->\n      <div class="lifetime-summary-grid">\n        <div class="lifetime-stat-card">\n          <span class="label">Games Played</span>\n          <span class="val">' + (stats.gamesPlayed) + '</span>\n        </div>\n        <div class="lifetime-stat-card">\n          <span class="label">01 Avg (Best)</span>\n          <span class="val">' + (stats.best01Avg > 0 ? stats.best01Avg.toFixed(1) : '—') + '</span>\n        </div>\n        <div class="lifetime-stat-card">\n          <span class="label">Cricket MPR (Best)</span>\n          <span class="val">' + (stats.bestCricketMPR > 0 ? stats.bestCricketMPR.toFixed(2) : '—') + '</span>\n        </div>\n      </div>\n      \n      <!-- Detailed Subsections -->\n      <div class="stats-sections-container">\n        <!-- \'01 Subsection -->\n        <section class="stats-subsection">\n          <h4 class="stats-section-title">01 Games Stats</h4>\n          <div class="stats-grid-2col">\n            <div class="stat-item">\n              <span class="label">Lifetime Avg</span>\n              <span class="val">' + (stats.total01Darts > 0 ? ((stats.total01Points / stats.total01Darts) * 3).toFixed(1) : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Best Checkout</span>\n              <span class="val">' + (stats.best01DartsToWin ? stats.best01DartsToWin + ' Darts' : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Total Busts</span>\n              <span class="val">' + (stats.busts) + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Total Darts</span>\n              <span class="val">' + (stats.total01Darts) + '</span>\n            </div>\n          </div>\n          \n          <!-- Tons Row -->\n          <div class="ton-counters-row">\n            <div class="ton-stat">\n              <span class="label">100+</span>\n              <span class="val" style="color: var(--text-primary)">' + (stats.ton100) + '</span>\n            </div>\n            <div class="ton-stat">\n              <span class="label">140+</span>\n              <span class="val" style="color: var(--success-color)">' + (stats.ton140) + '</span>\n            </div>\n            <div class="ton-stat">\n              <span class="label">180s</span>\n              <span class="val" style="color: var(--accent-color)">' + (stats.ton180) + '</span>\n            </div>\n          </div>\n        </section>\n        \n        <!-- Cricket Subsection -->\n        <section class="stats-subsection">\n          <h4 class="stats-section-title">Cricket Stats</h4>\n          <div class="stats-grid-2col">\n            <div class="stat-item">\n              <span class="label">Lifetime MPR</span>\n              <span class="val">' + (stats.totalCricketTurns > 0 ? (stats.totalCricketMarks / stats.totalCricketTurns).toFixed(2) : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Best MPR</span>\n              <span class="val">' + (stats.bestCricketMPR > 0 ? stats.bestCricketMPR.toFixed(2) : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">High Score</span>\n              <span class="val">' + (stats.highestCricketScore > 0 ? stats.highestCricketScore + ' pts' : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Total Marks</span>\n              <span class="val">' + (stats.totalCricketMarks) + '</span>\n            </div>\n          </div>\n        </section>\n      </div>\n      \n      <!-- Recent Matches List -->\n      <section class="recent-matches-container">\n        <h3>Recent Match History</h3>\n        <div class="match-history-list">\n  ';
+  var html = '\n    <div class="profile-detail-view">\n      <!-- Profile Header -->\n      <header class="profile-detail-header">\n        <div class="detail-avatar" style="background-color: ' + (profile.color) + '">\n          ' + (profile.name.substring(0, 2).toUpperCase()) + '\n        </div>\n        <div class="detail-name-meta">\n          <h2>' + (profile.name) + '</h2>\n          <span class="joined-date">Member since ' + (joinedDateStr) + '</span>\n        </div>\n      </header>\n      \n      <!-- Win / Loss Widget -->\n      <div class="win-rate-widget">\n        <div class="win-rate-header-label">\n          <span>Win / Loss Ratio</span>\n          <span style="color: var(--success-color)">' + (wr) + '% Win Rate</span>\n        </div>\n        <div class="win-rate-bar-outer">\n          <div class="win-rate-bar-inner" style="width: ' + (wr) + '%"></div>\n        </div>\n        <div class="win-rate-legend">\n          <span>Wins: ' + (stats.wins) + '</span>\n          <span>Losses: ' + (stats.losses) + '</span>\n          <span>Total Games: ' + (stats.gamesPlayed) + '</span>\n        </div>\n      </div>\n      \n      <!-- Lifetime Summary Cards -->\n      <div class="lifetime-summary-grid">\n        <div class="lifetime-stat-card">\n          <span class="label">Games Played</span>\n          <span class="val">' + (stats.gamesPlayed) + '</span>\n        </div>\n        <div class="lifetime-stat-card">\n          <span class="label">Best 01 Match Avg</span>\n          <span class="val">' + (stats.best01Avg > 0 ? stats.best01Avg.toFixed(1) : '—') + '</span>\n        </div>\n        <div class="lifetime-stat-card">\n          <span class="label">Cricket MPR (Best)</span>\n          <span class="val">' + (stats.bestCricketMPR > 0 ? stats.bestCricketMPR.toFixed(2) : '—') + '</span>\n        </div>\n      </div>\n      \n      <!-- Detailed Subsections -->\n      <div class="stats-sections-container">\n        <!-- \'01 Subsection -->\n        <section class="stats-subsection">\n          <h4 class="stats-section-title">01 Games Stats</h4>\n          <div class="stats-grid-2col">\n            <div class="stat-item">\n              <span class="label">Lifetime Avg</span>\n              <span class="val">' + (stats.total01Darts > 0 ? ((stats.total01Points / stats.total01Darts) * 3).toFixed(1) : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Fastest 01 Win</span>\n              <span class="val">' + (stats.best01DartsToWin ? stats.best01DartsToWin + ' Darts' : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Total Busts</span>\n              <span class="val">' + (stats.busts) + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Total Darts</span>\n              <span class="val">' + (stats.total01Darts) + '</span>\n            </div>\n          </div>\n          \n          <!-- Tons Row -->\n          <div class="ton-counters-row">\n            <div class="ton-stat">\n              <span class="label">100+</span>\n              <span class="val" style="color: var(--text-primary)">' + (stats.ton100) + '</span>\n            </div>\n            <div class="ton-stat">\n              <span class="label">140+</span>\n              <span class="val" style="color: var(--success-color)">' + (stats.ton140) + '</span>\n            </div>\n            <div class="ton-stat">\n              <span class="label">180s</span>\n              <span class="val" style="color: var(--accent-color)">' + (stats.ton180) + '</span>\n            </div>\n          </div>\n        </section>\n        \n        <!-- Cricket Subsection -->\n        <section class="stats-subsection">\n          <h4 class="stats-section-title">Cricket Stats</h4>\n          <div class="stats-grid-2col">\n            <div class="stat-item">\n              <span class="label">Lifetime MPR</span>\n              <span class="val">' + (stats.totalCricketTurns > 0 ? (stats.totalCricketMarks / stats.totalCricketTurns).toFixed(2) : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Best MPR</span>\n              <span class="val">' + (stats.bestCricketMPR > 0 ? stats.bestCricketMPR.toFixed(2) : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">High Score</span>\n              <span class="val">' + (stats.highestCricketScore > 0 ? stats.highestCricketScore + ' pts' : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Total Marks</span>\n              <span class="val">' + (stats.totalCricketMarks) + '</span>\n            </div>\n          </div>\n        </section>\n      </div>\n      \n      <!-- Recent Matches List -->\n      <section class="recent-matches-container">\n        <h3>Recent Match History</h3>\n        <div class="match-history-list">\n  ';
   
   var matches = dbMatches.filter(function(m) { return m.players.some(function(p) { return p.id === selectedProfileId; }); })
                            .sort(function(a, b) { return new Date(b.date) - new Date(a.date); });

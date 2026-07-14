@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DartPlayr</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/style.css?v=4.0">
+  <link rel="stylesheet" href="/static/style.css?v=4.1">
 </head>
 <body>
   <div id="app" class="app-container">
@@ -115,6 +115,14 @@
       <header class="game-header">
         <div class="header-left">
           <span id="game-title-display" class="game-title">Standard Cricket</span>
+        </div>
+        <div class="mobile-shot-strip" id="mobile-shot-strip" aria-live="polite">
+          <div class="mobile-shot-topline">
+            <span id="mobile-active-player">Player 1</span>
+            <strong id="mobile-primary-value">Score: 0</strong>
+          </div>
+          <div class="mobile-shot-helper" id="mobile-helper-value">Ready</div>
+          <div class="mobile-shot-turn" id="mobile-turn-value">Turn: 0</div>
         </div>
         <div class="header-right">
           <button type="button" class="btn btn-icon" id="btn-undo" onclick="handleUndo()" title="Undo last dart">Undo</button>
@@ -319,6 +327,6 @@
     <datalist id="saved-players-list"></datalist>
   </div>
 
-  <script src="/static/app.js?v=4.0"></script>
+  <script src="/static/app.js?v=4.1"></script>
 </body>
 </html>
