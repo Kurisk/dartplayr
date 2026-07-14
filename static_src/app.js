@@ -246,7 +246,7 @@ function updateCurrentAccountLabel() {
   if (helper) {
     helper.textContent = isGuestUser()
       ? "Guest profiles are temporary and disappear when you leave the site."
-      : "Profiles are created automatically from your account and player names used in games.";
+      : "Your stats are private by default. Open opponents from your recent match history after you have played them.";
   }
 }
 
@@ -1548,13 +1548,49 @@ function updateAutocompleteDatalist() {
   });
 }
 
+function escapeHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getCurrentUserProfile() {
+  if (!currentUser || dbPlayers.length === 0) return null;
+  if (!isGuestUser()) {
+    var ownedProfile = dbPlayers.find(function(p) { return p.ownerUserId === currentUser.id; });
+    if (ownedProfile) return ownedProfile;
+    return dbPlayers.find(function(p) { return p.name.toLowerCase() === currentUser.name.toLowerCase(); }) || null;
+  }
+  return dbPlayers[0] || null;
+}
+
+function canViewProfile(profile) {
+  if (!profile) return false;
+  if (isGuestUser()) return true;
+  if (currentUser && profile.ownerUserId === currentUser.id) return true;
+  var ownProfile = getCurrentUserProfile();
+  if (!ownProfile) return false;
+  return dbMatches.some(function(match) {
+    var hasOwnProfile = match.players.some(function(player) { return player.id === ownProfile.id; });
+    var hasRequestedProfile = match.players.some(function(player) { return player.id === profile.id; });
+    return hasOwnProfile && hasRequestedProfile;
+  });
+}
+
 function openStatsScreen() {
   document.getElementById("setup-screen").classList.remove("active");
   document.getElementById("stats-screen").classList.add("active");
   
   renderProfilesList();
-  if (!selectedProfileId && dbPlayers.length > 0) {
-    selectProfile(dbPlayers[0].id);
+  var ownProfile = getCurrentUserProfile();
+  if (!selectedProfileId || !canViewProfile(dbPlayers.find(function(p) { return p.id === selectedProfileId; }))) {
+    selectedProfileId = ownProfile ? ownProfile.id : null;
+  }
+  if (selectedProfileId) {
+    renderProfileDetails();
   } else {
     renderProfileDetails();
   }
@@ -1569,10 +1605,18 @@ function closeStatsScreen() {
 function renderProfilesList() {
   var container = document.getElementById("profiles-list-container");
   if (!container) return;
-  
+
   container.innerHTML = "";
-  
-  dbPlayers.forEach(function(p) {
+
+  var ownProfile = getCurrentUserProfile();
+  var profilesToShow = ownProfile ? [ownProfile] : [];
+
+  if (profilesToShow.length === 0) {
+    container.innerHTML = '\n      <div class="profile-list-empty">\n        Play a match to start building your stats.\n      </div>\n    ';
+    return;
+  }
+
+  profilesToShow.forEach(function(p) {
     var item = document.createElement("div");
     item.className = "profile-item" + (p.id === selectedProfileId ? " active" : "");
     item.onclick = function(e) {
@@ -1633,6 +1677,8 @@ function renderProfilesList() {
 }
 
 function selectProfile(id) {
+  var profile = dbPlayers.find(function(p) { return p.id === id; });
+  if (!canViewProfile(profile)) return;
   selectedProfileId = id;
   renderProfilesList();
   renderProfileDetails();
@@ -1643,25 +1689,29 @@ function renderProfileDetails() {
   if (!container) return;
   
   if (!selectedProfileId) {
-    container.innerHTML = '\n      <div class="empty-stats-state">\n        <span class="empty-icon">Stats</span>\n        <p>Select a player profile from the list to view detailed lifetime stats and match history.</p>\n      </div>\n    ';
+    container.innerHTML = '\n      <div class="empty-stats-state">\n        <span class="empty-icon">Stats</span>\n        <p>Your account stats will appear here once you sign in and play a match.</p>\n      </div>\n    ';
     return;
   }
   
   var profile = dbPlayers.find(function(p) { return p.id === selectedProfileId; });
-  if (!profile) {
-    selectedProfileId = null;
+  if (!profile || !canViewProfile(profile)) {
+    var ownProfile = getCurrentUserProfile();
+    selectedProfileId = ownProfile ? ownProfile.id : null;
     renderProfileDetails();
     return;
   }
   
   var stats = profile.stats;
   var wr = stats.gamesPlayed > 0 ? Math.round((stats.wins / stats.gamesPlayed) * 100) : 0;
+  var ownProfileForContext = getCurrentUserProfile();
+  var isOwnProfile = currentUser && !isGuestUser() && ownProfileForContext && profile.id === ownProfileForContext.id;
+  var profileContext = isOwnProfile || isGuestUser() ? "Your account stats" : "Opponent you have played";
   
   var joinedDateStr = new Date(profile.createdAt).toLocaleDateString(undefined, {
     year: 'numeric', month: 'long', day: 'numeric'
   });
   
-  var html = '\n    <div class="profile-detail-view">\n      <!-- Profile Header -->\n      <header class="profile-detail-header">\n        <div class="detail-avatar" style="background-color: ' + (profile.color) + '">\n          ' + (profile.name.substring(0, 2).toUpperCase()) + '\n        </div>\n        <div class="detail-name-meta">\n          <h2>' + (profile.name) + '</h2>\n          <span class="joined-date">Member since ' + (joinedDateStr) + '</span>\n        </div>\n      </header>\n      \n      <!-- Win / Loss Widget -->\n      <div class="win-rate-widget">\n        <div class="win-rate-header-label">\n          <span>Win / Loss Ratio</span>\n          <span style="color: var(--success-color)">' + (wr) + '% Win Rate</span>\n        </div>\n        <div class="win-rate-bar-outer">\n          <div class="win-rate-bar-inner" style="width: ' + (wr) + '%"></div>\n        </div>\n        <div class="win-rate-legend">\n          <span>Wins: ' + (stats.wins) + '</span>\n          <span>Losses: ' + (stats.losses) + '</span>\n          <span>Total Games: ' + (stats.gamesPlayed) + '</span>\n        </div>\n      </div>\n      \n      <!-- Lifetime Summary Cards -->\n      <div class="lifetime-summary-grid">\n        <div class="lifetime-stat-card">\n          <span class="label">Games Played</span>\n          <span class="val">' + (stats.gamesPlayed) + '</span>\n        </div>\n        <div class="lifetime-stat-card">\n          <span class="label">Best 01 Match Avg</span>\n          <span class="val">' + (stats.best01Avg > 0 ? stats.best01Avg.toFixed(1) : '—') + '</span>\n        </div>\n        <div class="lifetime-stat-card">\n          <span class="label">Cricket MPR (Best)</span>\n          <span class="val">' + (stats.bestCricketMPR > 0 ? stats.bestCricketMPR.toFixed(2) : '—') + '</span>\n        </div>\n      </div>\n      \n      <!-- Detailed Subsections -->\n      <div class="stats-sections-container">\n        <!-- \'01 Subsection -->\n        <section class="stats-subsection">\n          <h4 class="stats-section-title">01 Games Stats</h4>\n          <div class="stats-grid-2col">\n            <div class="stat-item">\n              <span class="label">Lifetime Avg</span>\n              <span class="val">' + (stats.total01Darts > 0 ? ((stats.total01Points / stats.total01Darts) * 3).toFixed(1) : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Fastest 01 Win</span>\n              <span class="val">' + (stats.best01DartsToWin ? stats.best01DartsToWin + ' Darts' : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Total Busts</span>\n              <span class="val">' + (stats.busts) + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Total Darts</span>\n              <span class="val">' + (stats.total01Darts) + '</span>\n            </div>\n          </div>\n          \n          <!-- Tons Row -->\n          <div class="ton-counters-row">\n            <div class="ton-stat">\n              <span class="label">100+</span>\n              <span class="val" style="color: var(--text-primary)">' + (stats.ton100) + '</span>\n            </div>\n            <div class="ton-stat">\n              <span class="label">140+</span>\n              <span class="val" style="color: var(--success-color)">' + (stats.ton140) + '</span>\n            </div>\n            <div class="ton-stat">\n              <span class="label">180s</span>\n              <span class="val" style="color: var(--accent-color)">' + (stats.ton180) + '</span>\n            </div>\n          </div>\n        </section>\n        \n        <!-- Cricket Subsection -->\n        <section class="stats-subsection">\n          <h4 class="stats-section-title">Cricket Stats</h4>\n          <div class="stats-grid-2col">\n            <div class="stat-item">\n              <span class="label">Lifetime MPR</span>\n              <span class="val">' + (stats.totalCricketTurns > 0 ? (stats.totalCricketMarks / stats.totalCricketTurns).toFixed(2) : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Best MPR</span>\n              <span class="val">' + (stats.bestCricketMPR > 0 ? stats.bestCricketMPR.toFixed(2) : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">High Score</span>\n              <span class="val">' + (stats.highestCricketScore > 0 ? stats.highestCricketScore + ' pts' : '—') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Total Marks</span>\n              <span class="val">' + (stats.totalCricketMarks) + '</span>\n            </div>\n          </div>\n        </section>\n      </div>\n      \n      <!-- Recent Matches List -->\n      <section class="recent-matches-container">\n        <h3>Recent Match History</h3>\n        <div class="match-history-list">\n  ';
+  var html = '\n    <div class="profile-detail-view">\n      <header class="profile-detail-header">\n        <div class="detail-avatar" style="background-color: ' + escapeHtml(profile.color) + '">\n          ' + escapeHtml(profile.name.substring(0, 2).toUpperCase()) + '\n        </div>\n        <div class="detail-name-meta">\n          <h2>' + escapeHtml(profile.name) + '</h2>\n          <span class="joined-date">' + escapeHtml(profileContext) + ' - member since ' + escapeHtml(joinedDateStr) + '</span>\n        </div>\n      </header>\n      \n      <div class="win-rate-widget">\n        <div class="win-rate-header-label">\n          <span>Win / Loss Ratio</span>\n          <span style="color: var(--success-color)">' + (wr) + '% Win Rate</span>\n        </div>\n        <div class="win-rate-bar-outer">\n          <div class="win-rate-bar-inner" style="width: ' + (wr) + '%"></div>\n        </div>\n        <div class="win-rate-legend">\n          <span>Wins: ' + (stats.wins) + '</span>\n          <span>Losses: ' + (stats.losses) + '</span>\n          <span>Total Games: ' + (stats.gamesPlayed) + '</span>\n        </div>\n      </div>\n      \n      <div class="lifetime-summary-grid">\n        <div class="lifetime-stat-card">\n          <span class="label">Games Played</span>\n          <span class="val">' + (stats.gamesPlayed) + '</span>\n        </div>\n        <div class="lifetime-stat-card">\n          <span class="label">Best 01 Match Avg</span>\n          <span class="val">' + (stats.best01Avg > 0 ? stats.best01Avg.toFixed(1) : '-') + '</span>\n        </div>\n        <div class="lifetime-stat-card">\n          <span class="label">Cricket MPR (Best)</span>\n          <span class="val">' + (stats.bestCricketMPR > 0 ? stats.bestCricketMPR.toFixed(2) : '-') + '</span>\n        </div>\n      </div>\n      \n      <div class="stats-sections-container">\n        <section class="stats-subsection">\n          <h4 class="stats-section-title">01 Games Stats</h4>\n          <div class="stats-grid-2col">\n            <div class="stat-item">\n              <span class="label">Lifetime Avg</span>\n              <span class="val">' + (stats.total01Darts > 0 ? ((stats.total01Points / stats.total01Darts) * 3).toFixed(1) : '-') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Fastest 01 Win</span>\n              <span class="val">' + (stats.best01DartsToWin ? stats.best01DartsToWin + ' Darts' : '-') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Total Busts</span>\n              <span class="val">' + (stats.busts) + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Total Darts</span>\n              <span class="val">' + (stats.total01Darts) + '</span>\n            </div>\n          </div>\n        </section>\n        \n        <section class="stats-subsection">\n          <h4 class="stats-section-title">Cricket Stats</h4>\n          <div class="stats-grid-2col">\n            <div class="stat-item">\n              <span class="label">Lifetime MPR</span>\n              <span class="val">' + (stats.totalCricketTurns > 0 ? (stats.totalCricketMarks / stats.totalCricketTurns).toFixed(2) : '-') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Best MPR</span>\n              <span class="val">' + (stats.bestCricketMPR > 0 ? stats.bestCricketMPR.toFixed(2) : '-') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">High Score</span>\n              <span class="val">' + (stats.highestCricketScore > 0 ? stats.highestCricketScore + ' pts' : '-') + '</span>\n            </div>\n            <div class="stat-item">\n              <span class="label">Total Marks</span>\n              <span class="val">' + (stats.totalCricketMarks) + '</span>\n            </div>\n          </div>\n        </section>\n      </div>\n      \n      <section class="recent-matches-container">\n        <h3>Recent Match History</h3>\n        <div class="match-history-list">\n  ';
   
   var matches = dbMatches.filter(function(m) { return m.players.some(function(p) { return p.id === selectedProfileId; }); })
                            .sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
@@ -1675,7 +1725,13 @@ function renderProfileDetails() {
       var isWinner = playerMatchInfo.isWinner;
       
       var opponents = m.players.filter(function(p) { return p.id !== selectedProfileId; })
-                                 .map(function(p) { return p.name; })
+                                 .map(function(p) {
+                                   var opponentProfile = dbPlayers.find(function(profileItem) { return profileItem.id === p.id; });
+                                   if (opponentProfile && canViewProfile(opponentProfile)) {
+                                     return '<button type="button" class="opponent-profile-link" data-profile-id="' + escapeHtml(p.id) + '">' + escapeHtml(p.name) + '</button>';
+                                   }
+                                   return escapeHtml(p.name);
+                                 })
                                  .join(", ");
       
       var dateObj = new Date(m.date);
@@ -1695,13 +1751,19 @@ function renderProfileDetails() {
         : playerMatchInfo.avgScore.toFixed(2);
       var metricLabel = m.gameMode === '01' ? 'Avg' : 'MPR';
       
-      html += '\n        <div class="match-history-card">\n          <div class="match-card-left">\n            <span class="match-result-badge ' + (isWinner ? 'win' : 'loss') + '">' + (isWinner ? 'WIN' : 'LOSS') + '</span>\n            <div class="match-meta-info">\n              <span class="mode">' + (gameModeText) + '</span>\n              <span class="opponents">vs ' + (opponents || 'Solo') + '</span>\n              <span class="date">' + (dateStr) + '</span>\n            </div>\n          </div>\n          <div class="match-card-right">\n            <span class="metric-val">' + (metricVal) + '</span>\n            <span class="metric-label">' + (metricLabel) + '</span>\n          </div>\n        </div>\n      ';
+      html += '\n        <div class="match-history-card">\n          <div class="match-card-left">\n            <span class="match-result-badge ' + (isWinner ? 'win' : 'loss') + '">' + (isWinner ? 'WIN' : 'LOSS') + '</span>\n            <div class="match-meta-info">\n              <span class="mode">' + escapeHtml(gameModeText) + '</span>\n              <span class="opponents">vs ' + (opponents || 'Solo') + '</span>\n              <span class="date">' + escapeHtml(dateStr) + '</span>\n            </div>\n          </div>\n          <div class="match-card-right">\n            <span class="metric-val">' + escapeHtml(metricVal) + '</span>\n            <span class="metric-label">' + escapeHtml(metricLabel) + '</span>\n          </div>\n        </div>\n      ';
     });
   }
   
-  html += '\n        </div>\n      </section>\n    </div>\n  ';
+  html += '\n        </div>\n      </section>\n      <section class="trophy-case-container">\n        <h3>Trophy Case</h3>\n        <div class="trophy-grid">\n          <div class="trophy-card trophy-ton">\n            <span class="trophy-mark">100</span>\n            <span class="trophy-label">Ton Turns</span>\n            <strong>' + (stats.ton100) + '</strong>\n          </div>\n          <div class="trophy-card trophy-big-ton">\n            <span class="trophy-mark">140</span>\n            <span class="trophy-label">Big Tons</span>\n            <strong>' + (stats.ton140) + '</strong>\n          </div>\n          <div class="trophy-card trophy-max">\n            <span class="trophy-mark">180</span>\n            <span class="trophy-label">Maximums</span>\n            <strong>' + (stats.ton180) + '</strong>\n          </div>\n          <div class="trophy-card">\n            <span class="trophy-mark">W</span>\n            <span class="trophy-label">Match Wins</span>\n            <strong>' + (stats.wins) + '</strong>\n          </div>\n          <div class="trophy-card">\n            <span class="trophy-mark">B</span>\n            <span class="trophy-label">Busts Survived</span>\n            <strong>' + (stats.busts) + '</strong>\n          </div>\n          <div class="trophy-card">\n            <span class="trophy-mark">G</span>\n            <span class="trophy-label">Games Played</span>\n            <strong>' + (stats.gamesPlayed) + '</strong>\n          </div>\n        </div>\n      </section>\n    </div>\n  ';
   
   container.innerHTML = html;
+  var opponentLinks = container.querySelectorAll(".opponent-profile-link");
+  for (var i = 0; i < opponentLinks.length; i++) {
+    opponentLinks[i].addEventListener("click", function(event) {
+      selectProfile(event.currentTarget.getAttribute("data-profile-id"));
+    });
+  }
 }
 
 function saveMatchResult() {

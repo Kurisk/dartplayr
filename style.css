@@ -1358,30 +1358,12 @@ body {
   color: var(--text-primary);
 }
 
-.ton-counters-row {
-  display: flex;
-  justify-content: space-between;
-  margin-top: var(--spacing-sm);
-  background-color: rgba(0, 0, 0, 0.2);
-  padding: var(--spacing-sm);
-  border-radius: var(--border-radius-sm);
-}
-
-.ton-stat {
-  text-align: center;
-  flex: 1;
-}
-
-.ton-stat .label {
-  font-size: 0.7rem;
+.profile-list-empty {
   color: var(--text-muted);
-  display: block;
-}
-
-.ton-stat .val {
-  font-family: var(--font-mono);
-  font-weight: bold;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  padding: var(--spacing-md);
+  text-align: center;
 }
 
 /* Recent Match History */
@@ -1459,6 +1441,23 @@ body {
   color: var(--text-muted);
 }
 
+.opponent-profile-link {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: var(--accent-color);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.opponent-profile-link:hover,
+.opponent-profile-link:focus-visible {
+  color: var(--success-color);
+}
+
 .match-meta-info .date {
   font-size: 0.7rem;
   color: var(--text-muted);
@@ -1480,6 +1479,86 @@ body {
 .match-card-right .metric-label {
   font-size: 0.7rem;
   color: var(--text-muted);
+}
+
+.trophy-case-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.trophy-case-container h3 {
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.trophy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.trophy-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "mark label"
+    "mark value";
+  align-items: center;
+  column-gap: var(--spacing-sm);
+  min-height: 70px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  padding: var(--spacing-sm);
+}
+
+.trophy-mark {
+  grid-area: mark;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.trophy-label {
+  grid-area: label;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.trophy-card strong {
+  grid-area: value;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+}
+
+.trophy-ton .trophy-mark {
+  background-color: rgba(79, 179, 255, 0.16);
+  color: var(--accent-color);
+}
+
+.trophy-big-ton .trophy-mark {
+  background-color: rgba(16, 185, 129, 0.16);
+  color: var(--success-color);
+}
+
+.trophy-max .trophy-mark {
+  background-color: rgba(244, 180, 78, 0.18);
+  color: var(--warning-color);
 }
 
 /* Winner Modal Stats Table */
@@ -1574,6 +1653,10 @@ body {
   
   .stats-sections-container {
     grid-template-columns: 1fr;
+  }
+
+  .trophy-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

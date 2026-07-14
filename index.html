@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DartPlayr</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/style.css?v=4.1">
+  <link rel="stylesheet" href="/static/style.css?v=4.2">
 </head>
 <body>
   <div id="app" class="app-container">
@@ -302,14 +302,14 @@
       <div class="stats-container card glass">
         <header class="stats-header">
           <button type="button" class="btn btn-secondary btn-small" onclick="closeStatsScreen()">Back to Setup</button>
-          <h2>Player Profiles & Stats</h2>
+          <h2>Your Stats</h2>
         </header>
 
         <div class="stats-layout">
           <aside class="stats-sidebar">
             <div class="stats-sub-card scrollable-profiles">
-              <h3>Saved Profiles</h3>
-              <p id="profiles-helper" class="profiles-helper">Profiles are created automatically from accounts and player names used in games.</p>
+              <h3>Your Profile</h3>
+              <p id="profiles-helper" class="profiles-helper">Your stats are private by default. Open opponents from your recent match history after you have played them.</p>
               <div id="profiles-list-container" class="profiles-list"></div>
             </div>
           </aside>
@@ -317,7 +317,7 @@
           <main class="stats-main-content" id="stats-detail-container">
             <div class="empty-stats-state">
               <span class="empty-icon">Stats</span>
-              <p>Select a player profile from the list to view detailed lifetime stats and match history.</p>
+              <p>Your account stats will appear here once you sign in and play a match.</p>
             </div>
           </main>
         </div>
@@ -327,6 +327,6 @@
     <datalist id="saved-players-list"></datalist>
   </div>
 
-  <script src="/static/app.js?v=4.1"></script>
+  <script src="/static/app.js?v=4.2"></script>
 </body>
 </html>
