@@ -1,14 +1,17 @@
 # DartPlayr
 
-DartPlayr is a static darts scoring app for match nights. It supports Cricket, 01 games, undo/redo, checkout suggestions, browser-local player accounts, per-user player profiles, lifetime stats, and match history.
+DartPlayr is a Django-backed darts scoring app for match nights. It supports Cricket, 01 games, undo/redo, checkout suggestions, global user accounts, player profiles, lifetime stats, match history, and Django admin.
 
 ## Run Locally
 
-Open `index.html` directly in a browser, or serve the folder locally:
+Create a virtual environment, install dependencies, and run Django:
 
 ```powershell
 cd C:\Users\kuris\Documents\Dart-Scoreboard
-python -m http.server 8002
+python -m venv venv
+.\venv\Scripts\pip install -r requirements.txt
+.\venv\Scripts\python manage.py migrate
+.\venv\Scripts\python manage.py runserver 8002
 ```
 
 Then visit `http://127.0.0.1:8002`.
@@ -27,20 +30,26 @@ Recommended VPS path:
 /var/www/dartplayr
 ```
 
-This app is static, so deployment only needs `index.html`, `style.css`, and `app.js`.
+The app runs as Django behind Gunicorn/Nginx. Static files are collected from `static_src/`.
 
 ## VPS Setup
 
 1. Create a GitHub repository for this project.
 2. Push this repo to GitHub.
-3. SSH into the VPS and run `scripts/install_vps_static_site.sh` with the GitHub repo URL.
-4. Enable TLS with Certbot after DNS resolves to the VPS.
+3. SSH into the VPS and run `scripts/install_vps_static_site.sh` with the GitHub repo URL and optional admin password.
+4. Enable or refresh TLS with Certbot after DNS resolves to the VPS.
 
 Example:
 
 ```bash
-sudo bash scripts/install_vps_static_site.sh https://github.com/YOUR_USER/DartPlayr.git
+sudo bash scripts/install_vps_static_site.sh https://github.com/YOUR_USER/DartPlayr.git "change-this-admin-password"
 sudo certbot --nginx -d dartplayr.skulkabout.com
+```
+
+Admin URL:
+
+```text
+https://dartplayr.skulkabout.com/admin/
 ```
 
 ## Updating Production
@@ -48,12 +57,16 @@ sudo certbot --nginx -d dartplayr.skulkabout.com
 After the first VPS setup, deploy future updates from the VPS with:
 
 ```bash
-cd /var/www/dartplayr
-sudo git pull --ff-only
+sudo bash /var/www/dartplayr/scripts/install_vps_static_site.sh https://github.com/Kurisk/dartplayr.git
 ```
 
 If file ownership is locked down by the web server, run the pull with the same user that owns `/var/www/dartplayr`.
 
-## Account Storage Note
+## Admin Password Reset
 
-The current login feature is browser-local. It separates users and stats on the same browser/device through `localStorage`, but it is not secure cloud authentication. Cross-device login, password reset, synced stats, leaderboards, and admin controls would require a backend database and hosted auth.
+Reset the admin password on the VPS with:
+
+```bash
+sudo sed -i 's/^DARTPLAYR_ADMIN_PASSWORD=.*/DARTPLAYR_ADMIN_PASSWORD=new-password-here/' /etc/dartplayr.env
+sudo -E /var/www/dartplayr/venv/bin/python /var/www/dartplayr/manage.py ensure_admin
+```

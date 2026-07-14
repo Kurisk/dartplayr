@@ -4,5 +4,10 @@ Thumbs.db
 .env
 .env.*
 node_modules/
+venv/
+db.sqlite3
+staticfiles/
+*.pyc
+__pycache__/
 .idea/
 .vscode/

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DartPlayr</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=3.1">
+  <link rel="stylesheet" href="/static/style.css?v=4.0">
 </head>
 <body>
   <div id="app" class="app-container">
@@ -32,8 +32,8 @@
             <label for="auth-name">Player name</label>
             <input type="text" id="auth-name" placeholder="e.g. Chris" maxlength="24" autocomplete="username" required>
 
-            <label for="auth-pin">PIN</label>
-            <input type="password" id="auth-pin" placeholder="4+ digits or letters" maxlength="32" autocomplete="current-password" required>
+            <label for="auth-password">Password</label>
+            <input type="password" id="auth-password" placeholder="8+ characters" maxlength="128" autocomplete="current-password" required>
 
             <p id="auth-message" class="auth-message" aria-live="polite"></p>
 
@@ -319,6 +319,6 @@
     <datalist id="saved-players-list"></datalist>
   </div>
 
-  <script src="app.js?v=3.1"></script>
+  <script src="/static/app.js?v=4.0"></script>
 </body>
 </html>
