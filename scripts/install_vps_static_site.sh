@@ -38,7 +38,7 @@ git config --global --add safe.directory "${SITE_DIR}"
 if [ ! -f "${ENV_FILE}" ]; then
   SECRET_KEY="$(python3 - <<'PY'
 import secrets
-alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*(-_=+)"
+alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 print("".join(secrets.choice(alphabet) for _ in range(64)))
 PY
 )"
