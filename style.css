@@ -2430,3 +2430,105 @@ body {
     text-align: center;
   }
 }
+
+/* Mobile gameplay should scroll as one page, with controls always reachable. */
+@media (max-width: 700px) {
+  body {
+    min-height: 100vh;
+    overflow: auto;
+    align-items: flex-start;
+  }
+
+  .app-container {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  #game-screen {
+    height: auto;
+    min-height: calc(100vh - 16px);
+    overflow: visible;
+  }
+
+  #game-screen.active {
+    display: flex;
+    overflow: visible;
+  }
+
+  .game-header {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    padding: 10px 0;
+    margin-bottom: 10px;
+    background: rgba(9, 10, 12, 0.96);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .game-title {
+    text-align: center;
+  }
+
+  .header-right {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .game-layout {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    padding-bottom: 18px;
+  }
+
+  .scoreboard-panel,
+  .control-panel,
+  .keypad-card {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .players-01-grid {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .player-card-01 {
+    min-height: 132px;
+    padding: 12px;
+  }
+
+  .p-score {
+    font-size: clamp(2.6rem, 16vw, 4rem);
+    line-height: 1;
+    margin: 8px 0;
+  }
+
+  .p-stats {
+    gap: 12px;
+  }
+
+  .turn-status {
+    position: sticky;
+    top: 76px;
+    z-index: 45;
+  }
+
+  .keypad-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .btn-num,
+  .btn-bull,
+  .btn-next,
+  .btn-miss {
+    min-height: 50px;
+  }
+}
