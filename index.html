@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DartPlayr</title>
+  <link rel="stylesheet" href="style.css?v=3.0">
+</head>
+<body>
+  <div id="app" class="app-container">
+    <div id="auth-screen" class="screen active">
+      <div class="auth-shell">
+        <section class="brand-panel">
+          <div class="brand-mark">DP</div>
+          <h1>DartPlayr</h1>
+          <p>Fast scoring, clean match flow, and player stats that stay with the person throwing.</p>
+          <div class="brand-stats-row">
+            <span>Cricket</span>
+            <span>01 Games</span>
+            <span>Profiles</span>
+          </div>
+        </section>
+
+        <section class="auth-card card">
+          <div class="auth-tabs" role="tablist" aria-label="Account mode">
+            <button type="button" id="auth-tab-login" class="auth-tab active" onclick="setAuthMode('login')">Log In</button>
+            <button type="button" id="auth-tab-signup" class="auth-tab" onclick="setAuthMode('signup')">Create Account</button>
+          </div>
+
+          <form id="auth-form" class="auth-form" onsubmit="event.preventDefault(); handleAuthSubmit();">
+            <label for="auth-name">Player name</label>
+            <input type="text" id="auth-name" placeholder="e.g. Chris" maxlength="24" autocomplete="username" required>
+
+            <label for="auth-pin">PIN</label>
+            <input type="password" id="auth-pin" placeholder="4+ digits or letters" maxlength="32" autocomplete="current-password" required>
+
+            <p id="auth-message" class="auth-message" aria-live="polite"></p>
+
+            <button type="submit" id="auth-submit" class="btn btn-primary btn-large">Log In</button>
+            <button type="button" class="btn btn-secondary btn-large" onclick="continueAsGuest()">Continue as Guest</button>
+          </form>
+        </section>
+      </div>
+    </div>
+
+    <div id="setup-screen" class="screen">
+      <div class="card glass setup-card">
+        <div class="account-bar">
+          <span id="current-account-label">Guest</span>
+          <button type="button" class="btn btn-secondary btn-small" onclick="logoutUser()">Switch User</button>
+        </div>
+
+        <h1 class="logo">DartPlayr</h1>
+        <p class="subtitle">Modern darts scoring for every match night</p>
+
+        <button type="button" class="btn btn-secondary btn-small full-width" id="btn-stats-dash" onclick="openStatsScreen()">Player Profiles & Stats</button>
+
+        <form id="setup-form" onsubmit="event.preventDefault();">
+          <div class="form-section">
+            <h2>Players</h2>
+            <div id="player-inputs-container">
+              <div class="player-input-row" id="p-row-0">
+                <span class="player-num">P1</span>
+                <input type="text" id="player-name-0" value="Player 1" placeholder="Name" maxlength="15" required autocomplete="off" list="saved-players-list">
+              </div>
+              <div class="player-input-row" id="p-row-1">
+                <span class="player-num">P2</span>
+                <input type="text" id="player-name-1" value="Player 2" placeholder="Name" maxlength="15" autocomplete="off" list="saved-players-list">
+                <button type="button" class="btn-remove" onclick="removePlayerRow(1)" aria-label="Remove player">x</button>
+              </div>
+            </div>
+            <button type="button" id="btn-add-player" class="btn btn-secondary btn-small" onclick="addPlayerRow()">Add Player</button>
+          </div>
+
+          <div class="form-section">
+            <h2>Game Mode</h2>
+            <div class="game-mode-toggle-group">
+              <button type="button" id="mode-btn-01" class="btn btn-toggle" onclick="setGameMode('01')">01 Games</button>
+              <button type="button" id="mode-btn-cricket" class="btn btn-toggle active" onclick="setGameMode('cricket')">Cricket</button>
+            </div>
+          </div>
+
+          <div id="options-01-container" class="form-section" style="display: none;">
+            <h2>01 Options</h2>
+            <div class="options-grid">
+              <div class="option-field">
+                <label for="start-score-select">Starting Score</label>
+                <select id="start-score-select" class="form-select">
+                  <option value="101">101</option>
+                  <option value="301" selected>301</option>
+                  <option value="501">501</option>
+                  <option value="701">701</option>
+                  <option value="1001">1001</option>
+                </select>
+              </div>
+              <div class="option-field">
+                <label for="out-rule-select">Finish Rule</label>
+                <select id="out-rule-select" class="form-select">
+                  <option value="double-out" selected>Double Out</option>
+                  <option value="straight-out">Straight Out</option>
+                  <option value="double-in-out">Double In / Double Out</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" id="btn-start-game" class="btn btn-primary btn-large btn-glow" onclick="startGame()">Start Game</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+      <header class="game-header">
+        <div class="header-left">
+          <span id="game-title-display" class="game-title">Standard Cricket</span>
+        </div>
+        <div class="header-right">
+          <button type="button" class="btn btn-icon" id="btn-undo" onclick="handleUndo()" title="Undo last dart">Undo</button>
+          <button type="button" class="btn btn-icon" id="btn-redo" onclick="handleRedo()" title="Redo last action">Redo</button>
+          <button type="button" class="btn btn-danger btn-small" onclick="confirmReset()" title="Start new game">New Game</button>
+        </div>
+      </header>
+
+      <div class="game-layout">
+        <main class="scoreboard-panel card glass">
+          <div id="scoreboard-01" class="scoreboard-view active">
+            <div class="players-01-grid" id="players-01-container"></div>
+          </div>
+
+          <div id="scoreboard-cricket" class="scoreboard-view">
+            <div class="cricket-grid-wrapper">
+              <table id="cricket-table" class="cricket-table">
+                <thead>
+                  <tr id="cricket-table-header"></tr>
+                </thead>
+                <tbody id="cricket-table-body"></tbody>
+              </table>
+            </div>
+            <div class="cricket-scores-summary" id="cricket-summary-container"></div>
+          </div>
+
+          <div id="winner-modal" class="winner-modal">
+            <div class="winner-content">
+              <span class="winner-trophy">WIN</span>
+              <h2 id="winner-name-display">Player Wins!</h2>
+              <p id="winner-stats-display">Match complete</p>
+              <div class="winner-table-container">
+                <table class="winner-stats-table">
+                  <thead>
+                    <tr>
+                      <th>Player</th>
+                      <th>Avg/MPR</th>
+                      <th>Darts</th>
+                      <th>Best Turn</th>
+                      <th>Busts</th>
+                    </tr>
+                  </thead>
+                  <tbody id="winner-stats-tbody"></tbody>
+                </table>
+              </div>
+              <div class="stats-saved-indicator">
+                <span class="success-dot"></span> Match statistics saved
+              </div>
+              <button class="btn btn-primary" onclick="confirmReset()">Setup New Game</button>
+            </div>
+          </div>
+        </main>
+
+        <aside class="control-panel">
+          <div id="suggestion-card" class="suggestion-card card glass-accent">
+            <div class="suggestion-header">
+              <span class="icon">Tip</span>
+              <span class="title">Checkout Suggestion</span>
+            </div>
+            <div id="suggestion-path" class="suggestion-path">T20, 20, D20</div>
+          </div>
+
+          <div class="keypad-card card glass">
+            <div id="keypad-01-container">
+              <div class="turn-status">
+                <div class="turn-player-info">
+                  <span class="turn-label">Active Turn</span>
+                  <strong id="active-player-name">Player 1</strong>
+                </div>
+                <div class="turn-darts-history" id="turn-darts-list">
+                  <span class="dart-slot" id="dart-slot-0">-</span>
+                  <span class="dart-slot" id="dart-slot-1">-</span>
+                  <span class="dart-slot" id="dart-slot-2">-</span>
+                </div>
+                <div class="turn-running-total" id="turn-sum-display">Turn: 0</div>
+              </div>
+
+              <div class="multiplier-tabs">
+                <button type="button" id="mult-single" class="btn btn-mult active" onclick="setMultiplier(1)">Single</button>
+                <button type="button" id="mult-double" class="btn btn-mult" onclick="setMultiplier(2)">Double</button>
+                <button type="button" id="mult-triple" class="btn btn-mult" onclick="setMultiplier(3)">Triple</button>
+              </div>
+
+              <div class="keypad-grid">
+                <button type="button" class="btn btn-num highlight-20" onclick="enterDart(20)">20</button>
+                <button type="button" class="btn btn-num highlight-19" onclick="enterDart(19)">19</button>
+                <button type="button" class="btn btn-num highlight-18" onclick="enterDart(18)">18</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(17)">17</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(16)">16</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(15)">15</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(14)">14</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(13)">13</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(12)">12</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(11)">11</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(10)">10</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(9)">9</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(8)">8</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(7)">7</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(6)">6</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(5)">5</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(4)">4</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(3)">3</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(2)">2</button>
+                <button type="button" class="btn btn-num" onclick="enterDart(1)">1</button>
+                <button type="button" class="btn btn-danger btn-miss" onclick="enterDart(0)">Miss</button>
+                <button type="button" class="btn btn-bull" id="btn-bullseye" onclick="enterDart(25)">Bull</button>
+                <button type="button" class="btn btn-secondary btn-next" onclick="completeTurnManually()">End Turn</button>
+              </div>
+            </div>
+
+            <div id="keypad-cricket-container" style="display: none;">
+              <div class="cricket-keypad-layout">
+                <div class="cricket-keypad-left">
+                  <div class="cricket-keypad-row">
+                    <button type="button" class="btn btn-cricket-target btn-single highlight-20" onclick="enterDartWithMultiplier(20, 1)">20</button>
+                    <button type="button" class="btn btn-cricket-target btn-double highlight-20" onclick="enterDartWithMultiplier(20, 2)">D20</button>
+                    <button type="button" class="btn btn-cricket-target btn-triple highlight-20" onclick="enterDartWithMultiplier(20, 3)">T20</button>
+                  </div>
+                  <div class="cricket-keypad-row">
+                    <button type="button" class="btn btn-cricket-target btn-single highlight-19" onclick="enterDartWithMultiplier(19, 1)">19</button>
+                    <button type="button" class="btn btn-cricket-target btn-double highlight-19" onclick="enterDartWithMultiplier(19, 2)">D19</button>
+                    <button type="button" class="btn btn-cricket-target btn-triple highlight-19" onclick="enterDartWithMultiplier(19, 3)">T19</button>
+                  </div>
+                  <div class="cricket-keypad-row">
+                    <button type="button" class="btn btn-cricket-target btn-single highlight-18" onclick="enterDartWithMultiplier(18, 1)">18</button>
+                    <button type="button" class="btn btn-cricket-target btn-double highlight-18" onclick="enterDartWithMultiplier(18, 2)">D18</button>
+                    <button type="button" class="btn btn-cricket-target btn-triple highlight-18" onclick="enterDartWithMultiplier(18, 3)">T18</button>
+                  </div>
+                  <div class="cricket-keypad-row">
+                    <button type="button" class="btn btn-cricket-target btn-single" onclick="enterDartWithMultiplier(17, 1)">17</button>
+                    <button type="button" class="btn btn-cricket-target btn-double" onclick="enterDartWithMultiplier(17, 2)">D17</button>
+                    <button type="button" class="btn btn-cricket-target btn-triple" onclick="enterDartWithMultiplier(17, 3)">T17</button>
+                  </div>
+                  <div class="cricket-keypad-row">
+                    <button type="button" class="btn btn-cricket-target btn-single" onclick="enterDartWithMultiplier(16, 1)">16</button>
+                    <button type="button" class="btn btn-cricket-target btn-double" onclick="enterDartWithMultiplier(16, 2)">D16</button>
+                    <button type="button" class="btn btn-cricket-target btn-triple" onclick="enterDartWithMultiplier(16, 3)">T16</button>
+                  </div>
+                  <div class="cricket-keypad-row">
+                    <button type="button" class="btn btn-cricket-target btn-single" onclick="enterDartWithMultiplier(15, 1)">15</button>
+                    <button type="button" class="btn btn-cricket-target btn-double" onclick="enterDartWithMultiplier(15, 2)">D15</button>
+                    <button type="button" class="btn btn-cricket-target btn-triple" onclick="enterDartWithMultiplier(15, 3)">T15</button>
+                  </div>
+                  <div class="cricket-keypad-row">
+                    <button type="button" class="btn btn-cricket-target btn-cricket-bull" onclick="enterDartWithMultiplier(25, 1)">Bull</button>
+                    <button type="button" class="btn btn-cricket-target btn-cricket-bull" onclick="enterDartWithMultiplier(25, 2)">DBull</button>
+                    <button type="button" class="btn btn-danger btn-cricket-miss" onclick="enterDartWithMultiplier(0, 1)">Miss</button>
+                  </div>
+                </div>
+
+                <div class="cricket-keypad-right">
+                  <div class="cricket-turn-card">
+                    <span class="turn-label">Active Turn</span>
+                    <strong id="cricket-active-player-name">Player 1</strong>
+                    <div class="cricket-turn-slots">
+                      <span class="dart-slot" id="cricket-dart-slot-0">-</span>
+                      <span class="dart-slot" id="cricket-dart-slot-1">-</span>
+                      <span class="dart-slot" id="cricket-dart-slot-2">-</span>
+                    </div>
+                    <div class="cricket-turn-points" id="cricket-turn-sum-display">Turn: 0</div>
+                  </div>
+
+                  <div class="cricket-turn-actions">
+                    <button type="button" class="btn btn-icon btn-cricket-action" id="btn-cricket-undo" onclick="handleUndo()" title="Undo last dart">Undo</button>
+                    <button type="button" class="btn btn-icon btn-cricket-action" id="btn-cricket-redo" onclick="handleRedo()" title="Redo last action">Redo</button>
+                    <button type="button" class="btn btn-secondary btn-cricket-end" onclick="completeTurnManually()">End Turn</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <div id="stats-screen" class="screen">
+      <div class="stats-container card glass">
+        <header class="stats-header">
+          <button type="button" class="btn btn-secondary btn-small" onclick="closeStatsScreen()">Back to Setup</button>
+          <h2>Player Profiles & Stats</h2>
+        </header>
+
+        <div class="stats-layout">
+          <aside class="stats-sidebar">
+            <div class="stats-sub-card">
+              <h3>Create Profile</h3>
+              <form id="create-profile-form" onsubmit="event.preventDefault(); handleCreateProfile();">
+                <div class="input-group">
+                  <input type="text" id="new-profile-name" placeholder="Profile Name" maxlength="15" required autocomplete="off">
+                </div>
+                <div class="color-picker-section">
+                  <label>Profile Color</label>
+                  <div class="color-picker-grid" id="color-picker">
+                    <div class="color-dot active" style="background-color: #00f0ff;" data-color="#00f0ff"></div>
+                    <div class="color-dot" style="background-color: #10b981;" data-color="#10b981"></div>
+                    <div class="color-dot" style="background-color: #f59e0b;" data-color="#f59e0b"></div>
+                    <div class="color-dot" style="background-color: #ef4444;" data-color="#ef4444"></div>
+                    <div class="color-dot" style="background-color: #ec4899;" data-color="#ec4899"></div>
+                    <div class="color-dot" style="background-color: #a855f7;" data-color="#a855f7"></div>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-small full-width">Create Profile</button>
+              </form>
+            </div>
+
+            <div class="stats-sub-card scrollable-profiles">
+              <h3>Saved Profiles</h3>
+              <div id="profiles-list-container" class="profiles-list"></div>
+            </div>
+          </aside>
+
+          <main class="stats-main-content" id="stats-detail-container">
+            <div class="empty-stats-state">
+              <span class="empty-icon">Stats</span>
+              <p>Select a player profile from the list to view detailed lifetime stats and match history.</p>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+
+    <datalist id="saved-players-list"></datalist>
+  </div>
+
+  <script src="app.js?v=3.0"></script>
+</body>
+</html>

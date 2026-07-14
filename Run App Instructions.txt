@@ -1,0 +1,7 @@
+open powershell
+
+Navigate to this directory
+C:\Users\kuris\Documents\Dart-Scoreboard
+
+python -m http.server 8002
+
