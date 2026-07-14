@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DartPlayr</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css?v=3.0">
 </head>
 <body>
@@ -52,6 +53,7 @@
 
         <h1 class="logo">DartPlayr</h1>
         <p class="subtitle">Modern darts scoring for every match night</p>
+        <p id="guest-warning" class="guest-warning">Guest mode is for quick games. Stats will not save once you leave the site.</p>
 
         <button type="button" class="btn btn-secondary btn-small full-width" id="btn-stats-dash" onclick="openStatsScreen()">Player Profiles & Stats</button>
 
@@ -159,7 +161,7 @@
                 </table>
               </div>
               <div class="stats-saved-indicator">
-                <span class="success-dot"></span> Match statistics saved
+                <span class="success-dot"></span> <span id="stats-saved-message">Match statistics saved</span>
               </div>
               <button class="btn btn-primary" onclick="confirmReset()">Setup New Game</button>
             </div>
@@ -297,29 +299,9 @@
 
         <div class="stats-layout">
           <aside class="stats-sidebar">
-            <div class="stats-sub-card">
-              <h3>Create Profile</h3>
-              <form id="create-profile-form" onsubmit="event.preventDefault(); handleCreateProfile();">
-                <div class="input-group">
-                  <input type="text" id="new-profile-name" placeholder="Profile Name" maxlength="15" required autocomplete="off">
-                </div>
-                <div class="color-picker-section">
-                  <label>Profile Color</label>
-                  <div class="color-picker-grid" id="color-picker">
-                    <div class="color-dot active" style="background-color: #00f0ff;" data-color="#00f0ff"></div>
-                    <div class="color-dot" style="background-color: #10b981;" data-color="#10b981"></div>
-                    <div class="color-dot" style="background-color: #f59e0b;" data-color="#f59e0b"></div>
-                    <div class="color-dot" style="background-color: #ef4444;" data-color="#ef4444"></div>
-                    <div class="color-dot" style="background-color: #ec4899;" data-color="#ec4899"></div>
-                    <div class="color-dot" style="background-color: #a855f7;" data-color="#a855f7"></div>
-                  </div>
-                </div>
-                <button type="submit" class="btn btn-primary btn-small full-width">Create Profile</button>
-              </form>
-            </div>
-
             <div class="stats-sub-card scrollable-profiles">
               <h3>Saved Profiles</h3>
+              <p id="profiles-helper" class="profiles-helper">Profiles are created automatically from accounts and player names used in games.</p>
               <div id="profiles-list-container" class="profiles-list"></div>
             </div>
           </aside>

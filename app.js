@@ -87,6 +87,8 @@ function log(msg) {
 var APP_STORAGE_PREFIX = "dartplayr";
 var currentUser = null;
 var authMode = "login";
+var guestPlayers = [];
+var guestMatches = [];
 
 function getAccounts() {
   try {
@@ -179,28 +181,29 @@ function handleAuthSubmit() {
 }
 
 function continueAsGuest() {
-  var accounts = getAccounts();
-  var guest = accounts.find(function(a) { return a.id === "guest"; });
-  if (!guest) {
-    guest = {
-      id: "guest",
-      name: "Guest",
-      pinHash: "",
-      createdAt: new Date().toISOString(),
-      lastLoginAt: new Date().toISOString()
-    };
-    accounts.push(guest);
-    saveAccounts(accounts);
-  }
-  activateAccount(guest);
+  guestPlayers = [];
+  guestMatches = [];
+  activateAccount({
+    id: "guest",
+    name: "Guest",
+    isGuest: true,
+    createdAt: new Date().toISOString(),
+    lastLoginAt: new Date().toISOString()
+  });
 }
 
 function activateAccount(account) {
   currentUser = account;
-  localStorage.setItem(APP_STORAGE_PREFIX + "_active_user", account.id);
+  if (isGuestUser()) {
+    localStorage.removeItem(APP_STORAGE_PREFIX + "_active_user");
+  } else {
+    localStorage.setItem(APP_STORAGE_PREFIX + "_active_user", account.id);
+  }
   selectedProfileId = null;
   loadDatabase();
+  ensureAccountProfile();
   updateCurrentAccountLabel();
+  populateDefaultPlayerName();
   showScreen("setup-screen");
 }
 
@@ -229,7 +232,9 @@ function restoreActiveAccount() {
 
   currentUser = account;
   loadDatabase();
+  ensureAccountProfile();
   updateCurrentAccountLabel();
+  populateDefaultPlayerName();
   showScreen("setup-screen");
 }
 
@@ -244,12 +249,45 @@ function showScreen(id) {
 
 function updateCurrentAccountLabel() {
   var label = document.getElementById("current-account-label");
-  if (label) label.textContent = currentUser ? "Signed in as " + currentUser.name : "Not signed in";
+  var warning = document.getElementById("guest-warning");
+  var helper = document.getElementById("profiles-helper");
+  if (label) label.textContent = currentUser ? (isGuestUser() ? "Playing as Guest" : "Signed in as " + currentUser.name) : "Not signed in";
+  if (warning) warning.style.display = isGuestUser() ? "block" : "none";
+  if (helper) {
+    helper.textContent = isGuestUser()
+      ? "Guest profiles are temporary and disappear when you leave the site."
+      : "Profiles are created automatically from your account and player names used in games.";
+  }
 }
 
 function getDatabaseKey(kind) {
   var userId = currentUser ? currentUser.id : "guest";
   return APP_STORAGE_PREFIX + "_" + userId + "_" + kind;
+}
+
+function isGuestUser() {
+  return !!(currentUser && currentUser.id === "guest");
+}
+
+function getProfileColor(index) {
+  var colors = ["#53d66a", "#e84f3f", "#f4b44e", "#4fb3ff", "#ec4899", "#a855f7"];
+  return colors[index % colors.length];
+}
+
+function ensureAccountProfile() {
+  if (!currentUser || isGuestUser()) return;
+  var exists = dbPlayers.some(function(p) {
+    return p.name.toLowerCase() === currentUser.name.toLowerCase();
+  });
+  if (!exists) {
+    createPlayerProfile(currentUser.name, getProfileColor(0), true);
+  }
+}
+
+function populateDefaultPlayerName() {
+  var input = document.getElementById("player-name-0");
+  if (!input || !currentUser || isGuestUser()) return;
+  input.value = currentUser.name;
 }
 
 // SETUP SCREEN CONTROLS
@@ -465,9 +503,7 @@ function startGame() {
     var profile = dbPlayers.find(function(p) { return p.name.toLowerCase() === name.toLowerCase(); });
     if (!profile) {
       // Auto-create a profile! Use a consistent color scheme based on index
-      var colors = ["#00f0ff", "#10b981", "#f59e0b", "#ef4444", "#ec4899", "#a855f7"];
-      var randomColor = colors[i % colors.length];
-      profile = createPlayerProfile(name, randomColor);
+      profile = createPlayerProfile(name, getProfileColor(i));
     }
     
     // Build initial player object
@@ -1172,6 +1208,7 @@ function updateUI() {
   var winnerModal = document.getElementById("winner-modal");
   var winnerName = document.getElementById("winner-name-display");
   var winnerStats = document.getElementById("winner-stats-display");
+  var statsSavedMessage = document.getElementById("stats-saved-message");
   
   if (state.isGameOver && state.winnerIndex !== -1) {
     var winner = state.players[state.winnerIndex];
@@ -1187,6 +1224,12 @@ function updateUI() {
         ? (winner.cricketMarksTotal / winner.totalTurns).toFixed(2) 
         : "0.00";
       winnerStats.textContent = "Marks/Round: " + mpr + " | Score: " + winner.score + " pts";
+    }
+
+    if (statsSavedMessage) {
+      statsSavedMessage.textContent = isGuestUser()
+        ? "Guest stats are temporary and will not save after you leave"
+        : "Match statistics saved";
     }
     
     winnerModal.className = "winner-modal active";
@@ -1357,28 +1400,26 @@ function renderCricketScoreboard() {
 var dbPlayers = [];
 var dbMatches = [];
 var selectedProfileId = null;
-var activeNewColor = '#00f0ff'; // default selected color for new profile
 
 function loadDatabase() {
   try {
+    if (isGuestUser()) {
+      dbPlayers = guestPlayers;
+      dbMatches = guestMatches;
+      if (dbPlayers.length === 0) {
+        createPlayerProfile("Player 1", getProfileColor(0), true);
+        createPlayerProfile("Player 2", getProfileColor(1), true);
+        createPlayerProfile("Player 3", getProfileColor(2), true);
+        createPlayerProfile("Player 4", getProfileColor(3), true);
+      }
+      return;
+    }
+
     var pData = localStorage.getItem(getDatabaseKey("players"));
     var mData = localStorage.getItem(getDatabaseKey("matches"));
 
-    if (!pData && currentUser && currentUser.id === "guest") {
-      pData = localStorage.getItem("darts_scoreboard_players");
-      mData = localStorage.getItem("darts_scoreboard_matches");
-    }
-    
     dbPlayers = pData ? JSON.parse(pData) : [];
     dbMatches = mData ? JSON.parse(mData) : [];
-    
-    // Pre-populate default profiles if empty
-    if (dbPlayers.length === 0) {
-      createPlayerProfile("Player 1", "#00f0ff", true);
-      createPlayerProfile("Player 2", "#10b981", true);
-      createPlayerProfile("Player 3", "#f59e0b", true);
-      createPlayerProfile("Player 4", "#ef4444", true);
-    }
   } catch (e) {
     log("Error loading database: " + e);
     dbPlayers = [];
@@ -1388,6 +1429,12 @@ function loadDatabase() {
 
 function saveDatabase() {
   try {
+    if (isGuestUser()) {
+      guestPlayers = dbPlayers;
+      guestMatches = dbMatches;
+      return;
+    }
+
     localStorage.setItem(getDatabaseKey("players"), JSON.stringify(dbPlayers));
     localStorage.setItem(getDatabaseKey("matches"), JSON.stringify(dbMatches));
   } catch (e) {
@@ -1470,40 +1517,6 @@ function updateAutocompleteDatalist() {
     option.value = p.name;
     datalist.appendChild(option);
   });
-}
-
-// Color picker initialization
-function initColorPicker() {
-  var picker = document.getElementById("color-picker");
-  if (!picker) return;
-  
-  var dots = picker.querySelectorAll(".color-dot");
-  for (var i = 0; i < dots.length; i++) {
-    (function(dot) {
-      dot.onclick = function() {
-        for (var j = 0; j < dots.length; j++) {
-          dots[j].classList.remove("active");
-        }
-        dot.classList.add("active");
-        activeNewColor = dot.getAttribute("data-color");
-      };
-    })(dots[i]);
-  }
-}
-
-function handleCreateProfile() {
-  var nameInput = document.getElementById("new-profile-name");
-  if (!nameInput) return;
-  
-  var name = nameInput.value.trim();
-  if (!name) return;
-  
-  var profile = createPlayerProfile(name, activeNewColor);
-  if (profile) {
-    nameInput.value = "";
-    renderProfilesList();
-    selectProfile(profile.id);
-  }
 }
 
 function openStatsScreen() {
@@ -1800,5 +1813,4 @@ function renderWinnerStatsTable(matchPlayers) {
 }
 
 // Initial Database Load & UI Hookup
-initColorPicker();
 restoreActiveAccount();

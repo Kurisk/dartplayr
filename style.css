@@ -128,6 +128,26 @@ body {
   letter-spacing: 1.5px;
 }
 
+.guest-warning,
+.profiles-helper {
+  border: 1px solid rgba(244, 180, 78, 0.32);
+  border-radius: var(--border-radius-sm);
+  background: rgba(244, 180, 78, 0.10);
+  color: #ffd89a;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.guest-warning {
+  display: none;
+  margin: 0 0 var(--spacing-lg);
+}
+
+.profiles-helper {
+  margin-bottom: var(--spacing-md);
+}
+
 .form-section {
   text-align: left;
   margin-bottom: var(--spacing-lg);
